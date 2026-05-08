@@ -1,0 +1,93 @@
+---
+title: "Inlämning 2 STAG33"
+author: "Josefine Sandell"
+date: "`r Sys.Date()`"
+output: word_document
+toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Introduktion
+
+# vinter i West Virginia
+
+```{r frost}
+
+frost <- read.table("frost.dat")
+
+plot(frost$Duration, frost$N.latitude, main = "Figur 1: Duration mot Latitude")
+plot(frost$Duration, frost$Elevation, main = "Figur 2: Duration mot Elevation")
+cor(frost$Duration, frost$N.latitude)
+cor(frost$Duration, frost$Elevation)
+
+```
+(a) Det verkar finnas ett linjärt samband mellan Duration och Elevation, enligt figur 2 och korrelationskoefficienten som beräknas vara cirka 0.76. Det verkar dock inte finnas ett linjärt samband mellan Duration och N.Latitude; figur 1 visar en relativ svag koppling mellan variablerna och korrelationskoefficienten är låg vid cirka 0.06.
+
+(b) Man kan inte alltid räkna med att eventuella linjära samband syns när man undersöker de förklarande variablerna en i taget. Det kan finnas flera orsaker till varför den inte syns; effekten från en förklarande variabel $X_1$ på responsvariabeln $Y$ kan exempelvis vara osynlig om $X_1$ är starkt korrelerad med en annan förklarande variabel $X_2$. Om multikolinearitet finns mellan förklarande variablerna kan det vara svårt att bedöma deras koppling till $Y$ visuellt. 
+
+På samma vis kan man inte alltid räkna med att ett linjärt samband finns mellan de förklarande variablerna och responsvariabeln i multiple linjär korrelation, även om ett linjärt samband är synligt. Detta beror på att scatterplottar visar marginella samband mellan variabler när multipel linjär regression handlar om partiella samband.
+
+```{r frost 2}
+
+frost.modell <- lm(Duration ~ Elevation + N.latitude, data = frost)
+
+summary(frost.modell)
+
+
+```
+(c) Regressionen är signifikant. P-värdet är 0.0000128 på 2 och 17 frihetsgrader, vilket är signifikant på en 0.01 signifikansnivå.
+
+(d) Förklaringsgraden $R^2$ blev 0.7343 och $R_{adj}^2$ blev 0.7031. Båda är relativt höga och tyder på att mycket av variationen i responsvariabeln förklaras av förklarande variablerna.
+
+(e) Både modellparametrarna Elevation och N.latitude är signifikant skilda från noll. P-värdena är mindre än signikansnivån 0.01.
+
+```{r frost 3, fig.height=5, fig.width=5}
+
+par(mfrow=c(2,2), oma = c(0, 0, 3, 0))
+plot(frost.modell, main = "")
+mtext("Figur 3: Residualanalys", side = 3, line = 1, outer = TRUE, cex = 1, font = 2)
+
+
+```
+
+```{r frost 4}
+
+plot(frost.modell$residuals, frost$Elevation, main = "Figur 4: Residualer mot Elevation")
+plot(frost.modell$residuals, frost$N.latitude, main = "Figur 5: Residualer mot N.latitude")
+
+library(car)
+
+
+avPlots(frost.modell, main = "Figur 6: Added-Variable Plots") 
+
+```
+
+(f) Både variabeln Elevation samt variabeln N.latitude bör vara med i regressionsmodellen baserad på en sammanlagd bedömning av modellegenskaperna. Added-variable plotterna visar en tydlig lutning för båda variablerna när de andra variablerna hålls fast, vilket tyder på att både Elevation och Latitude förklarar effekter i responsvariabeln som de andra variabeln inte kan själv. 
+
+När man analyserar modellen i helheten så är den acceptabel. Det finns dock två anmärksbara aspekter av residualplottarna i figur 3 som kan vara problematiska. En är att Q-Q plotten inte är en rak linje; det finns två punkter som är mycket större än de andra, vilket tyder på att modellantagandet om feltermernas normalitet inte uppfylls. Plotten med Cook-distansen visar också att samma punkt utgör en hävstångspunkt som kan bedömas vara problematisk, då den närmer sig Cook's distans. 
+
+De andra två residualplottarna är dock godtyckliga, vilket tyder på att modellantaganden uppfylls. Dessutom är $R_{adj}^2$ relativt hög och alla variablerna samt själva modellen är signifikanta på en 0.01 signifikansnivå. Tillsammans pekar alla dessa detaljer på att modellen är acceptabel, trots att det finns en problematisk hävstångspunkt.
+
+
+# Sömn
+
+
+```{r 1}
+
+```
+
+
+# Brottslighet i USA
+
+
+
+
+# Slutsats
+
+# AI-användning
+
+Jag (Josefine) använde inte AI i denna inlämningsuppgift.
