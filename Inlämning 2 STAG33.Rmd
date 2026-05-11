@@ -3,17 +3,20 @@ title: "Inlämning 2 STAG33"
 author: "Josefine Sandell"
 date: "`r Sys.Date()`"
 output: word_document
-toc: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+library(car)
+library(tidyverse)
+
+
 ```
 
 # Introduktion
 
-# vinter i West Virginia
+# Vinter i West Virginia
 
 ```{r frost}
 
@@ -47,10 +50,7 @@ summary(frost.modell)
 
 ```{r frost 3, fig.height=5, fig.width=5}
 
-par(mfrow=c(2,2), oma = c(0, 0, 3, 0))
-plot(frost.modell, main = "")
-mtext("Figur 3: Residualanalys", side = 3, line = 1, outer = TRUE, cex = 1, font = 2)
-
+plot(frost.modell, main = "Figur 3: Residualanalys")
 
 ```
 
@@ -60,7 +60,6 @@ plot(frost.modell$residuals, frost$Elevation, main = "Figur 4: Residualer mot El
 plot(frost.modell$residuals, frost$N.latitude, main = "Figur 5: Residualer mot N.latitude")
 
 library(car)
-
 
 avPlots(frost.modell, main = "Figur 6: Added-Variable Plots") 
 
@@ -83,11 +82,110 @@ De andra två residualplottarna är dock godtyckliga, vilket tyder på att model
 
 # Brottslighet i USA
 
+```{r crimes 1}
+
+CDI <- read.table("CDI.dat")
+
+CDI$Crimes.per.cap <- 1000*CDI$Crimes/CDI$Pop
+
+library(tidyverse)
+
+CDI.2 <- CDI %>% select(Unempl, Per.cap.income, Hospital.beds, High.school.grad, Region, Crimes.per.cap) # ny dataframe för att möjliggöra en grafisk överblick med alla relevanta variabler
+
+plot(CDI.2, main = "Grafisk överblick inför modell 1")
+
+```
 
 
+Inledningsvis selekterades ett antal variabler bedömda som potentiellt relevanta för att förklara brottslighet, med hänsyn tagen till att minimera multikollinearitet. Variablerna togs fram i en ny data-frame med select-funktionen från tidyverse-paketet för att möjliggöra en grafisk överblick.
+
+Av figurerna framgår att log-transformation är lämplig för variablerna inkomst per capita och arbetslöshet, samt även för brottslighet per capita. Vidare ersattes hospital beds med hospital beds per capita för att variabeln ska vara jämförbar med övriga variabler i datamaterialet (som också beskrivs som per capita).
+
+```{r Crimes 2}
+
+CDI.3 <- CDI %>% select(High.school.grad, Region)
+
+CDI.3$Hospital.beds.per.cap <- 1000*CDI$Hospital.beds/CDI$Pop
+
+CDI.3$log.Unempl <- log(CDI$Unempl)
+CDI.3$log.Per.cap.income <- log(CDI$Per.cap.income)
+CDI.3$log.Crimes.per.cap <- log(CDI$Crimes.per.cap)
+
+plot(CDI.3, main = "Grafisk överblick inför modell 1 med log-transformationer")
+
+
+crimes.modell.1 <- lm(log.Crimes.per.cap ~ High.school.grad + Region + log.Unempl + log.Per.cap.income + Hospital.beds.per.cap, data = CDI.3)
+
+summary(crimes.modell.1)
+
+
+```
+
+Modell 1 har ett multipelt $R2R^2$ värde på 0,406 och $Radj2R^2_{adj}$ på 0,349, vilket indikerar en måttlig förklaringsgrad. Samtliga förklarande variabler utom log-arbetslöshet är signifikanta på 5-procentsnivån, och modellen som helhet är statistiskt signifikant.
+
+Jag undersöker nu residualerna.
+
+```{r}
+
+plot(crimes.modell.1, main = "Residualanalyser, Modell 1")
+
+```
+
+Residualanalysen ger ett i huvudsak godtagbart resultat. Residualer mot anpassade värden uppvisar inget tydligt mönster, vilket tyder på att linjäritetsantagandet är uppfyllt. Q-Q-plotten utgör det mest problematiska elementet och indikerar avvikelser från normalfördelningsantagandet i svansarna. Scale-location-plotten tyder på approximativt konstant varians, och inga observationer överstiger Cook's distans.
+
+```{r}
+
+avPlots(crimes.modell.1, main = "Added Variable Plots, Modell 1")
+
+```
+Added-variable-plottarna visar att log-arbetslöshet, log-inkomst och gymnasieexamen samtliga uppvisar svag lutning, vilket indikerar begränsad marginaleffekt på responsvariabeln när övriga variabler hålls konstanta. Eftersom inkomst rimligen påverkas av både utbildningsnivå och arbetslöshet och därmed riskerar att introducera multikollinearitet, utesluts dessa två variabler inför nästa modellspecifikation.
+
+```{r}
+
+crimes.modell.2 <- lm(log.Crimes.per.cap ~ Hospital.beds.per.cap + High.school.grad + Region, data = CDI.3)
+
+summary(crimes.modell.2)
+
+plot(crimes.modell.2, main = "Residualanalys, Modell 2")
+
+avPlots(crimes.modell.2, main = "Added-Variable Plots, Modell 2")
+
+```
+
+Modell 2 visar en lägre förklaringsgrad än modell 1, och gymnasieexamensvariabeln är inte längre signifikant på 5-procentsnivån. Residualplottarna indikerar inga väsentliga förändringar jämfört med första modellen. Added-variable-plottarna bekräftar att gymnasieexamen har marginell påverkan när övriga variabler hålls konstanta, varför variabeln ersätts med fattigdom (Poverty) i nästa specifikation. Sambandet mellan fattigdom och brottslighet är välmotiverat i litteraturen, då ekonomisk utsatthet kan öka incitamenten för illegalt beteende.
+
+Fattigdomsvariabeln log-transformerades baserat på en grafisk inspektion som indikerade positiv skevhet i rådata. Av samma skäl log-transformerade jag även vårdplatsvariabeln, i syfte att bättre uppfylla antagandet om linjäritet.
+
+```{r, echo=FALSE, show = FALSE}
+
+CDI.4 <- select(CDI.3, Hospital.beds.per.cap, Region, log.Crimes.per.cap) # skapar en ny dataframe så att jag kan enkelt plotta variablerna mot varandra
+
+CDI.4$Poverty <- CDI$Poverty
+CDI.4$log.Poverty <- log(CDI.4$Poverty)
+CDI.4$log.hospital.beds.per.cap <- log(CDI.4$Hospital.beds.per.cap)
+
+plot(CDI.4, main = "Grafisk överblick inför modell 3") # överblick över variablerna med nya poverty-variabeln
+
+crime.modell.3 <- lm(log.Crimes.per.cap ~ log.Poverty + log.hospital.beds.per.cap + Region, data = CDI.4)
+
+summary(crime.modell.3)
+
+plot(crime.modell.3, main = "Residualanalys, Modell 3")
+
+avPlots(crime.modell.3, main = "Added-Variable Plots, Modell 3")
+
+```
+
+Modell 3 uppvisar $R2R^2$ 0,359 och $Radj2R^2_{adj}$ = 0,354. Samtliga förklarande variabler är signifikanta på 5-procentsnivån och själva modellen är också statistiskt signifikant. 
+
+Residualanalysen indikerar att modellantagandena i huvudsak är uppfyllda: linjäritet, approximativ normalitet och konstant varians hos residualerna. Q-Q-plotten uppvisar fortsatta avvikelser i svansarna, men inte tillräckligt mycket för att hävda att normalitetsantagandet inte uppfylls. Inga observationer identifieras som problematiska hävstångspunkter.
+
+Added-variable-plottarna uppvisar något kraftigare lutning för samtliga variabler jämfört med de föregående modellerna, vilket tyder på minskad multikollinearitet.
+
+Sammantaget bedöms modell 3, som förklarar brottlighet per capita med variablerna fattigdom, region, och vårdplatser per capita som den mest lämpliga modellen av de undersökta alternativen. Trots en måttlig förklaringsgrad uppfyller modellen modellantagandena i tillfredsställande utsträckning, samtliga inkluderade variabler är statistiskt signifikanta, och added-variable-plottarna indikerar lägre grad av multikollinearitet än i de tidigare specifikationerna. Därför bedömer jag modell 3 som den lämpligaste modellen.
 
 # Slutsats
 
 # AI-användning
 
-Jag (Josefine) använde inte AI i denna inlämningsuppgift.
+Jag (Josefine) använde AI (Claude) för att finslipa texten och göra språkbruket mer formellt. Jag använde inte AI till själva analysen eller kodningen.
