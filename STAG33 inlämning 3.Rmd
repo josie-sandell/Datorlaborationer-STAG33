@@ -1,0 +1,158 @@
+---
+title: 'STAG33: Lab 3'
+author: "Josefine Sandell"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(car)
+hills <- read.table("hills.dat")
+CDI <- read.table("CDI.dat")
+
+```
+
+# Introduktion
+
+Regressionsanalys är inte klar efter en modell har anpassats. Modellen måste valideras och outliers måste hanteras. Variabelselektion och regularisering kan även utföras för att göra modellen lämpligare och bestraffa multikolinjäritet. I denna rapport utför vi korsvalidering av modeller av rekordtider för terränglopp i Skottland. Vi återanvänder sedan vår brottslighetsmodell för att utföra __. Tillsammans bildar dessa två uppgifter till en gedigen regressionsanalys som betonar behovet av noggrann förberedelse, analys, och evaluering i skapandet av en multipel linjär regressionsmodell.
+
+# Terränglöpning i Skottland
+
+```{r hills 1}
+
+hills <- rename(hills, längd = dist,
+       tid = time,
+       stigning = climb)
+
+hills
+
+plot(hills, main = "Figur 1: Grafisk undersökning av 'Hills'")
+hills_modell_1 <- lm(tid ~ längd + stigning, data = hills)
+summary(hills_modell_1)
+
+plot(hills_modell_1, main = "Figur 2: Residualplottar till första modellen")
+
+```
+
+Figur 1 visar en matrisplot av alla tre variablerna i datasetet Hills. Den pekar på att variablerna stigning och längd är approximativt linjärt kopplade till rekordtiden.
+
+När vi anpassar en modell får vi en hög förklaringsgrad; multipel $R^2 = 0.9191$ och $R_{adj}^2 = 0.914$. Detta tyder på att mycket av variationen i responsvariabeln förklaras av prediktorerna.  Alla variablerna och interceptet är signifikanta, och själva modellen är också signifikant på en 0.05-signifikansnivå.
+
+Figur 2 visar att modellantaganden uppfylls för det mesta. Residuals vs fitted plotten visar en rak linje utan tydligt mönster vilket i sig själv tyder på ett linjärt samband mellan variablerna. Dock finns det två punkter som avviker betydligt mer än de andra: "Bens of Jura" och "Knock Hill." Dessutom kan vi även notera ett kluster med punkter i vänster sida av plotten, vilket kan indikera att feltermernas varians inte är konstant.
+
+Q-Q plotten tyder på att feltermerna är normalfördelade då residualerna följer en rak linje. Igen finns det två noterbara undantag, samma punkterna sedan tidigare.
+
+Scale-location plotten tyder på att feltermernas varians kan vara konstant då residualerna visar en ungefärlig rak linje. De visar dock att det kan finnas ett svagt mönster där variansen blir större för större anpassade värden, vilket skulle bryta mot modellantagandet. Sist tittar vi på Residuals vs Leverage plotten där samma punkterna, "Bens of Jura" och "Knock Hill" är utanför Cook's distans och på så sätt utgör problematiska hävstångspunkter.
+
+```{r hills 2}
+
+avPlots(hills_modell_1, main = "Figur 3: Added-Variable Plottar till modell 1")
+residualPlots(hills_modell_1)
+
+```
+
+Added-Variable plotten visar en tydlig lutning för båda längd och stignings-varaibeln mot tid när de andra variariablerna hålls konstant. Detta indikerar att båda variablar bidrar med mycket information som de andra variabeln inte bidrar med, alltså att modellen har låg kolinjäritet.
+
+De två lopp med störst påverkan på modellen är "Bens of Jura" och "Knock Hill," så vi anpassar en modell med logaritmerade variabler och undersöker den istället.
+
+```{r hills 3}
+
+hills_modell_2 <- lm(log(tid) ~ log(längd) + log(stigning), data = hills)
+
+summary(hills_modell_2)
+
+plot(hills_modell_2, main = "Figur 4: Residualplottar till modell 2")
+
+avPlots(hills_modell_2, main = "Figur 5: Added-Variable plottar till modell 2")
+
+```
+Modell 2 har nu endast en signifikant variabel på en 0.05-signifikansnivå: log-längd. Modellen är fortfarande signifikant med multipel $R^2 = 0.8121$ och $R_{[adj]^2} = 0.8003$, vilket är lite lägre än de från första modellen. 
+
+En analys av residualplottarna (figur 4) visar att modellantagandet om den linjära sambandet samt feltermernas homoskedasticitet uppfylls återigen, och nu avviker loppet "Bens of Jura" mindre från resten av residualerna. "Knock Hill" är dock fortfarande långt ifrån resten av residualerna. Klustret på vänstra sidan syns inte längre, vilket kan betyda att feltermernas varians är mer konstant.
+
+Q-Q plotten visar samma sak; de standardiserade residualerna följer en linjär fördelning och Bens of Jura är mer i linje med resten, men Knock Hill utgör fortfarande en hävstångspunkt. 
+
+Residuals vs fitted plot stärker vår observation i första plotten om att homoskedasticitetsantagandet uppfylls bättre i denna modell. Knock Hill är fortfarande en hävstångspunkt, men variansen är mer konstant utan tydligt mönster. 
+
+Den sista plotten tyder på att Bens of Jura inte längre utgör en hävstångspunkt, men Knock Hill gör det fortfarande.
+
+Added-Variable plotten (figur 5) visar att prediktorn log-längd fortfarande förklarar mycket av variationen i responsvariabeln. Log-stigning har dock en svagare lutning än i den första modellen. 
+
+```{r hills tredje modell}
+
+hills_modell_3 <- lm(tid ~ längd + I(längd^2) + stigning + I(stigning^2), data = hills)
+
+summary(hills_modell_3)
+
+plot(hills_modell_3, main = "Figur 6: Residualplottar till modell 3")
+
+avPlots(hills_modell_3, main = "Figur 7: Added-Variable plottar till modell 3")
+
+```
+Den tredje modellen har endast två signifikanta variabler av 5 på en 0,05 signifikansnivå; längd och stigning^2. Multipel $R^2$ värdet är fortfarande hög på 0.9494, och $R_{adj}^2 = 0.9494$. Detta är det högsta $R_{adj}^2$ värdet hittills. Själva modellen är signifikant på en 0.05 nivå.
+
+Residualanalysen i figur 6 pekar på att antagandet om det linjära sambandet mellan variablerna kan vara uppfylld. Som i första modellen finns det ett kluster med punkter i ena sidan av plotten, vilket kan vara problematiskt, och Knock Hill är fortfarande en hävstångspunkt. Annars är residualerna fördelat jämnt kring 0 utan tydligt mönster.
+
+Q-Q plotten är väldigt lik den från andra modellen. Feltermerna kan vara normalfördelade men Knock Hill avviker mycket. 
+
+Scale-Location plotten har återigen ett kluster med punkter på vänstra sidan, och Knock Hill avviker mycket. Residuals-vs-leverage plotten visar att Knock Hill har fortfarande stor leverage i modellen och är utanför Cook's distans. 
+
+Added-variable plottarna i figur 7 indikerar att kolinjäritet finns mellan prediktorerna. Variablerna längd_sq och stigning har en svag lutning mot tid givet others när de andra variablerna hålls konstant. Endast längd och stigning_sq verkar bidra med ny information när de förklarar responsvariabeln enligt figur 7.
+
+Av de tre modellerna så är den andra (med log-transformationerna) att föredra. Trots att den har den lägsta förklaringsgraden av alla så är den fortfarande relativt hög med $R_{[adj]^2} = 0.8003$. Det mest  fördelaktiga med modellen är att den uppfyller modellantaganden bäst. Det linjära sambandet mellan variablerna är tydligast i modell 2 och antaganden om feltermernas normalitet och homoskedasticitet uppfylls bäst. Loppet "Knock Hill" är en hävstångspunkt men den har minst påverkan i modell 2 jämfört med de andra modellerna. 
+
+```{r hills e}
+
+otherhills <- read.table("otherhills.dat")
+
+otherhills <- rename(otherhills,
+       längd = dist,
+       stigning = climb,
+       tid = time)
+
+time_hat_1 <- predict(hills_modell_1, newdata = otherhills)
+log_time_hat_2 <- predict(hills_modell_2, newdata = otherhills) 
+time_hat_2 <- exp(log_time_hat_2) # konvertera tillbaka till originalskalan
+
+time_hat_3 <- predict(hills_modell_3, newdata = otherhills)
+
+RSS_pred_1 <- sum((time_hat_1 - otherhills$tid)^2)
+
+SST_1 <- sum((otherhills$tid - mean(otherhills$tid))^2)
+
+R2_pred_1 <- 1 - (RSS_pred_1 / SST_1)
+
+
+RSS_pred_2 <- sum((time_hat_2 - otherhills$tid)^2)
+
+SST_2 <- sum((otherhills$tid - mean(otherhills$tid))^2)
+R2_pred_2 <- 1 - (RSS_pred_2 / SST_2)
+
+RSS_pred_3 <- sum((time_hat_3 - otherhills$tid)^2)
+
+SST_3 <- sum((otherhills$tid + mean(otherhills$tid))^2)
+R2_pred_3 <- 1 - (RSS_pred_3 / SST_3)
+
+tabell.jämförelse <- data.frame(
+  Modell = c("1: Inga Transformationer", "2: Log-transformationer", "3: Längd och stigning i kvadrat"),
+  Predikerad_förklaringsgrad = c(R2_pred_1, R2_pred_2, R2_pred_3)
+  )
+
+knitr::kable(tabell.jämförelse, caption = "Tabell 1: Jämförelse av modellernas R^2 pred värden")
+
+R2_pred_3 - R2_pred_2 # skillnaden mellan modell 3 och modell 2s R2_pred
+
+```
+Tabell 1 visar jämförelsen mellan de tre modellernas predikerade förklaringsgrader. Modell 3 har den högsta värdet, och modell 2 den lägsta. Differensen mellan modell 3 och 2s förklaringsgrad är dock låg, på 0.085. Det tyder på att skillnaden mellan modellernas förklaringsförmåga är måttlig.
+
+Trots att R^2_pred är större i modell 3 anser vi att modell 2 är fortfarande den lämpligaste modellen för att beskriva sambandet mellan loppets tid och dess längd och stigning. Modellantaganden uppfylls bättre i modell 2 och eftersom skillnaden mellan förklaringsgraderna är måttlig beslutar vi oss för att stå fast vid vårt val.
+
+För att hantera det avvikande loppet "Knock Hills" tycker vi att vi borde låta den vara utan ytterligare transformationer eller uteslutning av punkten. Vi har redan transformerat variablerna med log-transformationer, vilket hjälpte oss att hantera den andra hävstångspunkten. En undersökning av loppet "Knock Hills" visar att detta är ett lopp känd för sin dramatisk stigning och utmanande terräng. Eftersom Knock Hills avvikelse är naturligt förekommande (det vill säga, det är inte ett databearbetningsfel) så borde den inte uteslutas. Den bidrar med ny information och att utesluta den innebär att vi skulle förlora den informationen.
+
+# Sammanfattning
+
+# AI-redogörelse
+
+Jag (Josefine) använde Claude för att hjälpa med att beräkna R^2_pred värdet till modell 2 då jag fick ett orimligt lågt värde. Claude gav mig råd om att konvertera time_hat värdet tillbaka till originalskalan så att R^2_pred värdena kunna jämföras korrekt. Jag använde även Claude för att granska min text för språk- och stavningsfel. Jag använde inte Claude till text- eller kodgenerering.
