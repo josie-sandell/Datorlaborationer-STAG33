@@ -34,6 +34,8 @@ summary(hills_modell_1)
 
 plot(hills_modell_1, main = "Figur 2: Residualplottar till första modellen")
 
+residualPlots(hills_modell_1, main = "Figur 3: Residualplots från car-paketet")
+
 ```
 
 Figur 1 visar en matrisplot av alla tre variablerna i datasetet Hills. Den pekar på att variablerna stigning och längd är approximativt linjärt kopplade till rekordtiden.
@@ -46,14 +48,15 @@ Q-Q plotten tyder på att feltermerna är normalfördelade då residualerna föl
 
 Scale-location plotten tyder på att feltermernas varians kan vara konstant då residualerna visar en ungefärlig rak linje. De visar dock att det kan finnas ett svagt mönster där variansen blir större för större anpassade värden, vilket skulle bryta mot modellantagandet. Sist tittar vi på Residuals vs Leverage plotten där samma punkterna, "Bens of Jura" och "Knock Hill" är utanför Cook's distans och på så sätt utgör problematiska hävstångspunkter.
 
+Till sist undersöker vi residualplottarna från car-paketets funktion ResidualPlots() i figur 3. En tydlig kurver indikerar att linjäritetsantagandet inte håller. Vi ser en stark kurva för stignings-variabeln och en svag kurva för de andra variablerna. Därför kan det vara rimligt att transformera variablerna, vilket vi gör i modell 2.
+
 ```{r hills 2}
 
-avPlots(hills_modell_1, main = "Figur 3: Added-Variable Plottar till modell 1")
-residualPlots(hills_modell_1)
+avPlots(hills_modell_1, main = "Figur 4: Added-Variable Plottar till modell 1")
 
 ```
 
-Added-Variable plotten visar en tydlig lutning för båda längd och stignings-varaibeln mot tid när de andra variariablerna hålls konstant. Detta indikerar att båda variablar bidrar med mycket information som de andra variabeln inte bidrar med, alltså att modellen har låg kolinjäritet.
+Added-Variable plotten i figur 4 visar en tydlig lutning för båda längd och stignings-varaibeln mot tid när de andra variariablerna hålls konstant. Detta indikerar att båda variablar bidrar med mycket information som de andra variabeln inte bidrar med, alltså att modellen har låg kolinjäritet.
 
 De två lopp med störst påverkan på modellen är "Bens of Jura" och "Knock Hill," så vi anpassar en modell med logaritmerade variabler och undersöker den istället.
 
@@ -63,22 +66,25 @@ hills_modell_2 <- lm(log(tid) ~ log(längd) + log(stigning), data = hills)
 
 summary(hills_modell_2)
 
-plot(hills_modell_2, main = "Figur 4: Residualplottar till modell 2")
+plot(hills_modell_2, main = "Figur 5: Residualplottar till modell 2")
 
-avPlots(hills_modell_2, main = "Figur 5: Added-Variable plottar till modell 2")
+residualPlots(hills_modell_2, main = "Figur 6: Residualplottar med car-paketet")
+
+avPlots(hills_modell_2, main = "Figur 7: Added-Variable plottar till modell 2")
 
 ```
 Modell 2 har nu endast en signifikant variabel på en 0.05-signifikansnivå: log-längd. Modellen är fortfarande signifikant med multipel $R^2 = 0.8121$ och $R_{[adj]^2} = 0.8003$, vilket är lite lägre än de från första modellen. 
 
-En analys av residualplottarna (figur 4) visar att modellantagandet om den linjära sambandet samt feltermernas homoskedasticitet uppfylls återigen, och nu avviker loppet "Bens of Jura" mindre från resten av residualerna. "Knock Hill" är dock fortfarande långt ifrån resten av residualerna. Klustret på vänstra sidan syns inte längre, vilket kan betyda att feltermernas varians är mer konstant.
+En analys av residualplottarna (figur 5) visar att modellantagandet om den linjära sambandet samt feltermernas homoskedasticitet uppfylls återigen, och nu avviker loppet "Bens of Jura" mindre från resten av residualerna. "Knock Hill" är dock fortfarande långt ifrån resten av residualerna. Klustret på vänstra sidan syns inte längre, vilket kan betyda att feltermernas varians är mer konstant.
 
 Q-Q plotten visar samma sak; de standardiserade residualerna följer en linjär fördelning och Bens of Jura är mer i linje med resten, men Knock Hill utgör fortfarande en hävstångspunkt. 
 
 Residuals vs fitted plot stärker vår observation i första plotten om att homoskedasticitetsantagandet uppfylls bättre i denna modell. Knock Hill är fortfarande en hävstångspunkt, men variansen är mer konstant utan tydligt mönster. 
-
 Den sista plotten tyder på att Bens of Jura inte längre utgör en hävstångspunkt, men Knock Hill gör det fortfarande.
 
-Added-Variable plotten (figur 5) visar att prediktorn log-längd fortfarande förklarar mycket av variationen i responsvariabeln. Log-stigning har dock en svagare lutning än i den första modellen. 
+Car-paketets residualplottar i figur 6 visar att linjäritetsantagandet håller bättre i denna modell. Kurvan är mycket svagare för alla variablerna, men en svag kurva för stignings-variabeln finns kvar.
+
+Added-Variable plotten (figur 7) visar att prediktorn log-längd fortfarande förklarar mycket av variationen i responsvariabeln. Log-stigning har dock en svagare lutning än i den första modellen. 
 
 ```{r hills tredje modell}
 
@@ -86,20 +92,24 @@ hills_modell_3 <- lm(tid ~ längd + I(längd^2) + stigning + I(stigning^2), data
 
 summary(hills_modell_3)
 
-plot(hills_modell_3, main = "Figur 6: Residualplottar till modell 3")
+plot(hills_modell_3, main = "Figur 8: Residualplottar till modell 3")
 
-avPlots(hills_modell_3, main = "Figur 7: Added-Variable plottar till modell 3")
+residualPlots(hills_modell_3, main = "Figur 9: Residualplottar med car-paketet")
+
+avPlots(hills_modell_3, main = "Figur 10: Added-Variable plottar till modell 3")
 
 ```
 Den tredje modellen har endast två signifikanta variabler av 5 på en 0,05 signifikansnivå; längd och stigning^2. Multipel $R^2$ värdet är fortfarande hög på 0.9494, och $R_{adj}^2 = 0.9494$. Detta är det högsta $R_{adj}^2$ värdet hittills. Själva modellen är signifikant på en 0.05 nivå.
 
-Residualanalysen i figur 6 pekar på att antagandet om det linjära sambandet mellan variablerna kan vara uppfylld. Som i första modellen finns det ett kluster med punkter i ena sidan av plotten, vilket kan vara problematiskt, och Knock Hill är fortfarande en hävstångspunkt. Annars är residualerna fördelat jämnt kring 0 utan tydligt mönster.
+Residualanalysen i figur 8 pekar på att antagandet om det linjära sambandet mellan variablerna kan vara uppfylld. Som i första modellen finns det ett kluster med punkter i ena sidan av plotten, vilket kan vara problematiskt, och Knock Hill är fortfarande en hävstångspunkt. Annars är residualerna fördelat jämnt kring 0 utan tydligt mönster.
 
 Q-Q plotten är väldigt lik den från andra modellen. Feltermerna kan vara normalfördelade men Knock Hill avviker mycket. 
 
 Scale-Location plotten har återigen ett kluster med punkter på vänstra sidan, och Knock Hill avviker mycket. Residuals-vs-leverage plotten visar att Knock Hill har fortfarande stor leverage i modellen och är utanför Cook's distans. 
 
-Added-variable plottarna i figur 7 indikerar att kolinjäritet finns mellan prediktorerna. Variablerna längd_sq och stigning har en svag lutning mot tid givet others när de andra variablerna hålls konstant. Endast längd och stigning_sq verkar bidra med ny information när de förklarar responsvariabeln enligt figur 7.
+Car-paketets residualplottar (figur 9) är svåra att tolka, men det verkar inte kvarstå några tydliga kurvor vilket tyder på att linjäritetsantagandet uppfylls.
+
+Added-variable plottarna i figur 10 indikerar att kolinjäritet finns mellan prediktorerna. Variablerna längd_sq och stigning har en svag lutning mot tid givet others när de andra variablerna hålls konstant. Endast längd och stigning_sq verkar bidra med ny information när de förklarar responsvariabeln enligt figuren.
 
 Av de tre modellerna så är den andra (med log-transformationerna) att föredra. Trots att den har den lägsta förklaringsgraden av alla så är den fortfarande relativt hög med $R_{[adj]^2} = 0.8003$. Det mest  fördelaktiga med modellen är att den uppfyller modellantaganden bäst. Det linjära sambandet mellan variablerna är tydligast i modell 2 och antaganden om feltermernas normalitet och homoskedasticitet uppfylls bäst. Loppet "Knock Hill" är en hävstångspunkt men den har minst påverkan i modell 2 jämfört med de andra modellerna. 
 
